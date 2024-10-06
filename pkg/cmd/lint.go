@@ -47,7 +47,7 @@ DETAILS:
 			return nil, err
 		}
 		// group causes by position, so that we can group them together in the same output line
-		errors := make(map[Position][]metav1.StatusCause)
+		errors := make(map[position][]metav1.StatusCause)
 		for _, items := range causes {
 			for _, c := range items {
 				path, err := yaml.PathString(fmt.Sprintf("$.%s", c.Field))
@@ -62,7 +62,7 @@ DETAILS:
 			}
 		}
 		keys := maps.Keys(errors)
-		slices.SortFunc(keys, func(i, j Position) int {
+		slices.SortFunc(keys, func(i, j position) int {
 			return cmp.Or(
 				cmp.Compare(i.Line, j.Line),
 				cmp.Compare(i.Column, j.Column),
@@ -78,7 +78,7 @@ DETAILS:
 			for field, msgs := range messages {
 				fieldMessages = append(fieldMessages, fmt.Sprintf("field %q: %s", field, strings.Join(msgs, ", ")))
 			}
-			le := LintError{
+			le := lintError{
 				File:    file,
 				Line:    position.Line,
 				Column:  position.Column,
@@ -90,37 +90,32 @@ DETAILS:
 	return []byte(strings.Join(results, "\n")), nil
 }
 
-type Position struct {
+type position struct {
 	Line   int
 	Column int
 }
 
-type Reason struct {
-	Type    string
-	Message string
-}
-
-type LintError struct {
+type lintError struct {
 	File    string
 	Line    int
 	Column  int
 	Message string
 }
 
-func (e LintError) String() string {
+func (e lintError) String() string {
 	return fmt.Sprintf("%s:%d:%d: %s", e.File, e.Line, e.Column, e.Message)
 }
 
-func getPosition(p *yaml.Path, source []byte) (Position, error) {
+func getPosition(p *yaml.Path, source []byte) (position, error) {
 	file, err := parser.ParseBytes([]byte(source), 0)
 	if err != nil {
-		return Position{}, err
+		return position{}, err
 	}
 	node, err := p.FilterFile(file)
 	if err != nil {
-		return Position{}, err
+		return position{}, err
 	}
-	return Position{
+	return position{
 		Line:   node.GetToken().Position.Line,
 		Column: node.GetToken().Position.Column,
 	}, nil
