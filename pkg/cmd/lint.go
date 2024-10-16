@@ -50,11 +50,7 @@ DETAILS:
 		errors := make(map[position][]metav1.StatusCause)
 		for _, items := range causes {
 			for _, c := range items {
-				path, err := yaml.PathString(fmt.Sprintf("$.%s", c.Field))
-				if err != nil {
-					return nil, err
-				}
-				position, err := getPosition(path, b)
+				position, err := getPosition(c.Field, b)
 				if err != nil {
 					return nil, err
 				}
@@ -106,12 +102,16 @@ func (e lintError) String() string {
 	return fmt.Sprintf("%s:%d:%d: %s", e.File, e.Line, e.Column, e.Message)
 }
 
-func getPosition(p *yaml.Path, source []byte) (position, error) {
+func getPosition(field string, source []byte) (position, error) {
+	path, err := yaml.PathString(fmt.Sprintf("$.%s", field))
+	if err != nil {
+		return position{}, err
+	}
 	file, err := parser.ParseBytes([]byte(source), 0)
 	if err != nil {
 		return position{}, err
 	}
-	node, err := p.FilterFile(file)
+	node, err := path.FilterFile(file)
 	if err != nil {
 		return position{}, err
 	}
